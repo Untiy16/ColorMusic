@@ -120,7 +120,7 @@ byte FIRE_COOLING = 50;
 // remote left/right
 byte FIRE_SPARKING = 120;
 
-// mode 7 case 5
+// mode 7 case 5,6
 unsigned int TRAVEL_LIGHT_SPEED = 50;
 
 
@@ -635,6 +635,9 @@ void animation() {
         case 5:
           travel_light();
           break;
+        case 6:
+          beads();
+          break;
 
       }
       break;
@@ -747,7 +750,7 @@ void remoteTick() {
           case 4:
           case 7: if (++freq_strobe_mode > 3) freq_strobe_mode = 0;
             break;
-          case 6: if (++light_mode > 5) light_mode = 0;
+          case 6: if (++light_mode > 6) light_mode = 0;
             break;
         }
         break;
@@ -779,7 +782,8 @@ void remoteTick() {
                   break;
                 case 4: FIRE_COOLING = smartIncr(FIRE_COOLING, 10, 20, 100);
                   break;
-                case 5: TRAVEL_LIGHT_SPEED = smartIncr(TRAVEL_LIGHT_SPEED, -50, 50, 1000);
+                case 5:
+                case 6: TRAVEL_LIGHT_SPEED = smartIncr(TRAVEL_LIGHT_SPEED, -50, 10, 1000);
                   break;
               }
               break;
@@ -816,7 +820,8 @@ void remoteTick() {
                   break;
                 case 4: FIRE_COOLING = smartIncr(FIRE_COOLING, -10, 20, 100);
                   break;
-                case 5: TRAVEL_LIGHT_SPEED = smartIncr(TRAVEL_LIGHT_SPEED, 50, 50, 1000);
+                case 5:
+                case 6: TRAVEL_LIGHT_SPEED = smartIncr(TRAVEL_LIGHT_SPEED, 50, 10, 1000);
                   break;
               }
               break;
@@ -846,7 +851,8 @@ void remoteTick() {
             case 6:
               switch (light_mode) { //int smartIncr(int value, int incr_step, int mininmum, int maximum) {
                 case 0:
-                case 5: LIGHT_COLOR = smartIncr(LIGHT_COLOR, -10, 0, 255);
+                case 5:
+                case 6: LIGHT_COLOR = smartIncr(LIGHT_COLOR, -10, 0, 255);
                   break;
                 case 1: COLOR_SPEED = smartIncr(COLOR_SPEED, -10, 0, 255);
                   break;
@@ -882,7 +888,8 @@ void remoteTick() {
             case 6:
               switch (light_mode) {
                 case 0:
-                case 5: LIGHT_COLOR = smartIncr(LIGHT_COLOR, 10, 0, 255);
+                case 5:
+                case 6: LIGHT_COLOR = smartIncr(LIGHT_COLOR, 10, 0, 255);
                   break;
                 case 1: COLOR_SPEED = smartIncr(COLOR_SPEED, 10, 0, 255);
                   break;

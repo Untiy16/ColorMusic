@@ -84,4 +84,32 @@ void travel_light() {
    }
 }
 
+void beads() {
+   static int runningLed = 0;              // Tracks the current LED index
+   static int numLeds = NUM_LEDS;              // Tracks the current LED index
+
+   if (millis() - travel_light_timer >= TRAVEL_LIGHT_SPEED) {
+      travel_light_timer = millis();
+      runningLed++;
+      if (runningLed >= numLeds) {
+          runningLed = 0; // Reset to the beginning
+          numLeds--;
+      }
+      if (numLeds <= 0) {
+          numLeds = NUM_LEDS;
+      }
+   }
+
+   for (int i = 0; i < numLeds + 1; i++) {
+       if (i == runningLed) {
+         leds[i] = CHSV(LIGHT_COLOR, LIGHT_SAT, 255);
+       } else {
+         leds[i] = CRGB::Black;
+       }
+   }
+   for (int j = NUM_LEDS - 1; j >= numLeds; j--) {
+       leds[j] = CHSV(LIGHT_COLOR, LIGHT_SAT, 255);
+   }
+}
+
 void dd(String s) {Serial.println(s);}void dd(int s) {Serial.println(s);}
