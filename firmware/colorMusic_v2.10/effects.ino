@@ -65,13 +65,11 @@ void pride()
 
 
 void travel_light() {
-   static int runningLed = 0;              // Tracks the current LED index
-
-   if (millis() - travel_light_timer >= TRAVEL_LIGHT_SPEED) {
-      travel_light_timer = millis();
+   static int runningLed = 0;
+   EVERY_N_MILLISECONDS_DYNAMIC(TRAVEL_LIGHT_SPEED) {
       runningLed++;
       if (runningLed >= NUM_LEDS) {
-         runningLed = 0; // Reset to the beginning
+         runningLed = 0;
       }
    }
 
@@ -85,14 +83,13 @@ void travel_light() {
 }
 
 void beads() {
-   static int runningLed = 0;              // Tracks the current LED index
-   static int numLeds = NUM_LEDS;              // Tracks the current LED index
+   static int runningLed = 0;
+   static int numLeds = NUM_LEDS;
 
-   if (millis() - travel_light_timer >= TRAVEL_LIGHT_SPEED) {
-      travel_light_timer = millis();
+   EVERY_N_MILLISECONDS_DYNAMIC(TRAVEL_LIGHT_SPEED) {
       runningLed++;
       if (runningLed >= numLeds) {
-          runningLed = 0; // Reset to the beginning
+          runningLed = 0;
           numLeds--;
       }
       if (numLeds <= 0) {
