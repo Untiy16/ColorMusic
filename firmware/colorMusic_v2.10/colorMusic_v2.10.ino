@@ -29,9 +29,11 @@
 #define SETTINGS_LOG 0      // вывод всех настроек из EEPROM в порт при запуске
 
 // ----- настройки ленты
-#define NUM_LEDS 60        // количество светодиодов (данная версия поддерживает до 410 штук)
-#define CURRENT_LIMIT 3000  // лимит по току в МИЛЛИАМПЕРАХ, автоматически управляет яркостью (пожалей свой блок питания!) 0 - выключить лимит
-byte BRIGHTNESS = 200;      // яркость по умолчанию (0 - 255)
+#define NUM_LEDS 100        // количество светодиодов (данная версия поддерживает до 410 штук)
+#define CURRENT_LIMIT 2000  // лимит по току в МИЛЛИАМПЕРАХ, автоматически управляет яркостью (пожалей свой блок питания!) 0 - выключить лимит
+byte BRIGHTNESS = 255;      // яркость по умолчанию (0 - 255)
+byte EMPTY_BRIGHT = 255;           // яркость "не горящих" светодиодов (0 - 255)
+#define EMPTY_COLOR HUE_PURPLE    // цвет "не горящих" светодиодов. Будет чёрный, если яркость 0
 
 // ----- пины подключения
 #define SOUND_R A2         // аналоговый пин вход аудио, правый канал
@@ -56,15 +58,13 @@ byte BRIGHTNESS = 200;      // яркость по умолчанию (0 - 255)
 float RAINBOW_STEP = 5.00;         // шаг изменения цвета радуги
 
 // ----- отрисовка
-#define MODE 0                    // режим при запуске
+#define STARTUP_MODE 0                    // режим при запуске
 #define MAIN_LOOP 5               // период основного цикла отрисовки (по умолчанию 5)
 
 // ----- сигнал
 #define MONO 1                    // 1 - только один канал (ПРАВЫЙ!!!!! SOUND_R!!!!!), 0 - два канала
 #define EXP 1.4                   // степень усиления сигнала (для более "резкой" работы) (по умолчанию 1.4)
-#define POTENT 0                  // 1 - используем потенциометр, 0 - используется внутренний источник опорного напряжения 1.1 В
-byte EMPTY_BRIGHT = 30;           // яркость "не горящих" светодиодов (0 - 255)
-#define EMPTY_COLOR HUE_PURPLE    // цвет "не горящих" светодиодов. Будет чёрный, если яркость 0
+#define POTENT 1                  // 1 - используем потенциометр, 0 - используется внутренний источник опорного напряжения 1.1 В
 
 // ----- нижний порог шумов
 uint16_t LOW_PASS = 100;          // нижний порог шумов режим VU, ручная настройка
@@ -107,6 +107,22 @@ byte RUNNING_SPEED = 11;
 byte HUE_START = 0;
 byte HUE_STEP = 5;
 #define LIGHT_SMOOTH 2
+
+// mode 7 case 4 ---- режим огня ----
+// COOLING/Охлажнение: Насколько воздух охлаждается
+// Меньше охлаждение - выше пламя и наоборот
+// Default 50, suggested range 20-100
+// remote up/down
+byte FIRE_COOLING = 50;
+
+// SPARKING: Какова вероятность появления искры
+// Default 120, suggested range 50-200.
+// remote left/right
+byte FIRE_SPARKING = 120;
+
+// mode 7 case 5
+unsigned int TRAVEL_LIGHT_SPEED = 50;
+
 
 /*
   Цвета для HSV
@@ -225,7 +241,7 @@ float averageLevel = 50;
 int maxLevel = 100;
 int MAX_CH = NUM_LEDS / 2;
 int hue;
-unsigned long main_timer, hue_timer, strobe_timer, running_timer, color_timer, rainbow_timer, eeprom_timer;
+unsigned long main_timer, hue_timer, strobe_timer, running_timer, color_timer, rainbow_timer, eeprom_timer, travel_light_timer;
 float averK = 0.006;
 byte count;
 float index = (float)255 / MAX_CH;   // коэффициент перевода для палитры
@@ -235,7 +251,7 @@ int RcurrentLevel, LcurrentLevel;
 int colorMusic[3];
 float colorMusic_f[3], colorMusic_aver[3];
 boolean colorMusicFlash[3], strobeUp_flag, strobeDwn_flag;
-byte this_mode = MODE;
+byte this_mode = STARTUP_MODE;
 int thisBright[3], strobe_bright = 0;
 unsigned int light_time = STROBE_PERIOD * STROBE_DUTY / 100;
 volatile boolean ir_flag;
@@ -253,7 +269,7 @@ boolean running_flag[3], eeprom_flag;
 
 void setup() {
   Serial.begin(9600);
-  FastLED.addLeds<WS2811, LED_PIN, GRB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+  FastLED.addLeds<WS2811, LED_PIN, RGB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   if (CURRENT_LIMIT > 0) FastLED.setMaxPowerInVoltsAndMilliamps(5, CURRENT_LIMIT);
   FastLED.setBrightness(BRIGHTNESS);
 
@@ -610,6 +626,16 @@ void animation() {
             if (rainbow_steps < 0) rainbow_steps = 255;
           }
           break;
+        case 3:
+          pride();
+          break;
+        case 4:
+          fire();
+          break;
+        case 5:
+          travel_light();
+          break;
+
       }
       break;
     case 7:
@@ -721,7 +747,7 @@ void remoteTick() {
           case 4:
           case 7: if (++freq_strobe_mode > 3) freq_strobe_mode = 0;
             break;
-          case 6: if (++light_mode > 2) light_mode = 0;
+          case 6: if (++light_mode > 5) light_mode = 0;
             break;
         }
         break;
@@ -750,6 +776,10 @@ void remoteTick() {
                 case 1: LIGHT_SAT = smartIncr(LIGHT_SAT, 20, 0, 255);
                   break;
                 case 2: RAINBOW_STEP_2 = smartIncrFloat(RAINBOW_STEP_2, 0.5, 0.5, 10);
+                  break;
+                case 4: FIRE_COOLING = smartIncr(FIRE_COOLING, 10, 20, 100);
+                  break;
+                case 5: TRAVEL_LIGHT_SPEED = smartIncr(TRAVEL_LIGHT_SPEED, -50, 50, 1000);
                   break;
               }
               break;
@@ -784,6 +814,10 @@ void remoteTick() {
                   break;
                 case 2: RAINBOW_STEP_2 = smartIncrFloat(RAINBOW_STEP_2, -0.5, 0.5, 10);
                   break;
+                case 4: FIRE_COOLING = smartIncr(FIRE_COOLING, -10, 20, 100);
+                  break;
+                case 5: TRAVEL_LIGHT_SPEED = smartIncr(TRAVEL_LIGHT_SPEED, 50, 50, 1000);
+                  break;
               }
               break;
             case 7: MAX_COEF_FREQ = smartIncrFloat(MAX_COEF_FREQ, -0.1, 0.0, 10);
@@ -810,12 +844,15 @@ void remoteTick() {
             case 5: STROBE_SMOOTH = smartIncr(STROBE_SMOOTH, -20, 0, 255);
               break;
             case 6:
-              switch (light_mode) {
-                case 0: LIGHT_COLOR = smartIncr(LIGHT_COLOR, -10, 0, 255);
+              switch (light_mode) { //int smartIncr(int value, int incr_step, int mininmum, int maximum) {
+                case 0:
+                case 5: LIGHT_COLOR = smartIncr(LIGHT_COLOR, -10, 0, 255);
                   break;
                 case 1: COLOR_SPEED = smartIncr(COLOR_SPEED, -10, 0, 255);
                   break;
                 case 2: RAINBOW_PERIOD = smartIncr(RAINBOW_PERIOD, -1, -20, 20);
+                  break;
+                case 4: FIRE_SPARKING = smartIncr(FIRE_SPARKING, -10, 50, 200);
                   break;
               }
               break;
@@ -844,11 +881,14 @@ void remoteTick() {
               break;
             case 6:
               switch (light_mode) {
-                case 0: LIGHT_COLOR = smartIncr(LIGHT_COLOR, 10, 0, 255);
+                case 0:
+                case 5: LIGHT_COLOR = smartIncr(LIGHT_COLOR, 10, 0, 255);
                   break;
                 case 1: COLOR_SPEED = smartIncr(COLOR_SPEED, 10, 0, 255);
                   break;
                 case 2: RAINBOW_PERIOD = smartIncr(RAINBOW_PERIOD, 1, -20, 20);
+                  break;
+                case 4: FIRE_SPARKING = smartIncr(FIRE_SPARKING, 10, 50, 200);
                   break;
               }
               break;
@@ -949,6 +989,8 @@ void updateEEPROM() {
   EEPROM.updateInt(56, HUE_STEP);
   EEPROM.updateInt(60, EMPTY_BRIGHT);
   if (KEEP_STATE) EEPROM.updateByte(64, ONstate);
+  EEPROM.updateInt(68, FIRE_SPARKING);
+  EEPROM.updateInt(72, FIRE_COOLING);
 }
 void readEEPROM() {
   this_mode = EEPROM.readByte(1);
@@ -970,6 +1012,8 @@ void readEEPROM() {
   HUE_STEP = EEPROM.readInt(56);
   EMPTY_BRIGHT = EEPROM.readInt(60);
   if (KEEP_STATE) ONstate = EEPROM.readByte(64);
+  FIRE_SPARKING = EEPROM.readInt(68);
+  FIRE_COOLING = EEPROM.readInt(72);
 }
 void eepromTick() {
   if (eeprom_flag)
