@@ -699,16 +699,49 @@ void SILENCE() {
 }
 
 // вспомогательная функция, изменяет величину value на шаг incr в пределах minimum.. maximum
-int smartIncr(int value, int incr_step, int mininmum, int maximum) {
+int smartIncr(int value, int incr_step, int mininmum, int maximum, bool visualize = true) {
   int val_buf = value + incr_step;
   val_buf = constrain(val_buf, mininmum, maximum);
+
+  if (visualize) {
+    visualizeSettings(val_buf, mininmum, maximum);
+  }
+
   return val_buf;
 }
 
-float smartIncrFloat(float value, float incr_step, float mininmum, float maximum) {
+float smartIncrFloat(float value, float incr_step, float mininmum, float maximum, bool visualize = true) {
   float val_buf = value + incr_step;
   val_buf = constrain(val_buf, mininmum, maximum);
+
+  if (visualize) {
+    visualizeSettings(val_buf, mininmum, maximum);
+  }
+
   return val_buf;
+}
+
+template <typename T>
+void visualizeSettings(T settingsValue, T minimum, T maximum) {
+  int displayValue = 1;
+  if (settingsValue >= maximum) {
+    displayValue = NUM_LEDS;
+  } else if (settingsValue <= minimum) {
+    displayValue = 1;
+  } else {
+    displayValue = ceil(1 + (settingsValue - minimum) * (static_cast<float>(NUM_LEDS - 1)/(maximum - minimum)));
+  }
+  displayValue = constrain(displayValue, 1, NUM_LEDS);
+
+  leds[0] = leds[NUM_LEDS - 1] = CHSV(HUE_RED, 255, 255);
+  if (displayValue > 1) {
+    for (int i = NUM_LEDS - 1; i >= NUM_LEDS - displayValue; i--) {
+      leds[i] = CRGB::White;//CHSV(HUE_BLUE, 255, 255);
+    }
+  }
+
+  FastLED.show();
+  delay(300); 
 }
 
 #if REMOTE_TYPE != 0
