@@ -29,7 +29,7 @@
 #define SETTINGS_LOG 0      // вывод всех настроек из EEPROM в порт при запуске
 
 // ----- настройки ленты
-#define NUM_LEDS 100        // количество светодиодов (данная версия поддерживает до 410 штук)
+#define NUM_LEDS 180        // количество светодиодов (данная версия поддерживает до 410 штук)
 #define CURRENT_LIMIT 2000  // лимит по току в МИЛЛИАМПЕРАХ, автоматически управляет яркостью (пожалей свой блок питания!) 0 - выключить лимит
 byte BRIGHTNESS = 255;      // яркость по умолчанию (0 - 255)
 byte EMPTY_BRIGHT = 255;           // яркость "не горящих" светодиодов (0 - 255)
@@ -245,7 +245,7 @@ float averageLevel = 50;
 int maxLevel = 100;
 int MAX_CH = NUM_LEDS / 2;
 int hue;
-unsigned long main_timer, hue_timer, strobe_timer, running_timer, color_timer, rainbow_timer, eeprom_timer;
+unsigned long main_timer, hue_timer, strobe_timer, running_timer, color_timer, rainbow_timer, eeprom_timer, mode_settings_timer;
 float averK = 0.006;
 byte count;
 float index = (float)255 / MAX_CH;   // коэффициент перевода для палитры
@@ -273,7 +273,7 @@ boolean running_flag[3], eeprom_flag;
 
 void setup() {
   Serial.begin(9600);
-  FastLED.addLeds<WS2811, LED_PIN, RGB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+  FastLED.addLeds<WS2811, LED_PIN, GRB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   if (CURRENT_LIMIT > 0) FastLED.setMaxPowerInVoltsAndMilliamps(5, CURRENT_LIMIT);
   FastLED.setBrightness(BRIGHTNESS);
 
@@ -750,6 +750,7 @@ void visualizeSettings(T settingsValue, T minimum, T maximum) {
   }
 
   isSettingsVisualizationActive = true;
+  mode_settings_timer = millis();
 }
 
 #if REMOTE_TYPE != 0
@@ -1073,7 +1074,7 @@ void eepromTick() {
 }
 
 void settingsVisualizationCountdown() {
-  EVERY_N_MILLISECONDS(3000) {
+  if (millis() - mode_settings_timer >= 300) {
     isSettingsVisualizationActive = false;
   }
 }
