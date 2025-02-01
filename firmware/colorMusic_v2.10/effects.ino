@@ -108,3 +108,37 @@ void beads() {
        leds[j] = CHSV(LIGHT_COLOR, LIGHT_SAT, 255);
    }
 }
+
+
+unsigned long previousMillisPolice = 0;
+const int policeFlashInterval = 100;  // Time for each flash
+const int policePauseInterval = 200;  // Time between swaps
+bool swapColors = false;        // Toggle for switching colors
+int flashCount = 0;
+void policeStrobe() {
+    unsigned long currentMillis = millis();
+
+    if (flashCount < 3) {
+        if (currentMillis - previousMillisPolice >= policeFlashInterval) {
+            previousMillisPolice = currentMillis;
+
+            if (flashCount % 2 == 0) {
+                // Half strip RED, Half strip BLUE
+                fill_solid(leds, NUM_LEDS / 2, swapColors ? CRGB::Blue : CRGB::Red);
+                fill_solid(leds + (NUM_LEDS / 2), NUM_LEDS / 2, swapColors ? CRGB::Red : CRGB::Blue);
+            } else {
+                // Turn off LEDs briefly to create a strobe effect
+                fill_solid(leds, NUM_LEDS, CRGB::Black);
+            }
+
+            FastLED.show();
+            flashCount++;
+        }
+    } else {
+        if (currentMillis - previousMillisPolice >= policePauseInterval) {
+            previousMillisPolice = currentMillis;
+            swapColors = !swapColors;  // Swap Red/Blue sides
+            flashCount = 0;            // Reset flash count
+        }
+    }
+}

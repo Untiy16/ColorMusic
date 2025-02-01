@@ -656,6 +656,9 @@ void animation() {
         case 6:
           beads();
           break;
+        case 7:
+          policeStrobe();
+          break;
 
       }
       break;
@@ -853,7 +856,7 @@ void remoteTick() {
           case 4:
           case 7: if (++freq_strobe_mode > 3) freq_strobe_mode = 0;
             break;
-          case 6: if (++light_mode > 6) light_mode = 0;
+          case 6: if (++light_mode > 7) light_mode = 0;
             break;
           case 8: if (++multi_frequencies_mode > 3) multi_frequencies_mode = 0;
             break;
