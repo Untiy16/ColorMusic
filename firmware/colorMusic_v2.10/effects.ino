@@ -109,4 +109,11 @@ void beads() {
    }
 }
 
-void dd(String s) {Serial.println(s);}void dd(int s) {Serial.println(s);}
+template <typename T>
+void dd(T valueToPrint, bool lineBreake = true) {
+    if (lineBreake) {
+      Serial.println(valueToPrint);
+    } else {
+      Serial.print(valueToPrint);
+    }
+}
