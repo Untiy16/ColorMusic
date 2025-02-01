@@ -260,7 +260,7 @@ int thisBright[3], strobe_bright = 0;
 unsigned int light_time = STROBE_PERIOD * STROBE_DUTY / 100;
 volatile boolean ir_flag;
 boolean settings_mode, ONstate = true;
-int8_t freq_strobe_mode, light_mode;
+int8_t freq_strobe_mode, light_mode, multi_frequencies_mode;
 int freq_max;
 float freq_max_f, rainbow_steps;
 int freq_f[32];
@@ -336,6 +336,7 @@ void setup() {
   Serial.print(F("this_mode = ")); Serial.println(this_mode);
   Serial.print(F("freq_strobe_mode = ")); Serial.println(freq_strobe_mode);
   Serial.print(F("light_mode = ")); Serial.println(light_mode);
+  Serial.print(F("multi_frequencies_mode = ")); Serial.println(multi_frequencies_mode);
   Serial.print(F("RAINBOW_STEP = ")); Serial.println(RAINBOW_STEP);
   Serial.print(F("MAX_COEF_FREQ = ")); Serial.println(MAX_COEF_FREQ);
   Serial.print(F("STROBE_PERIOD = ")); Serial.println(STROBE_PERIOD);
@@ -362,6 +363,15 @@ void loop() {
 #endif
   mainLoop();       // главный цикл обработки и отрисовки
   eepromTick();     // проверка не пора ли сохранить настройки
+}
+
+template <typename T>
+void dd(T valueToPrint, bool lineBreake = true) {
+    if (lineBreake) {
+      Serial.println(valueToPrint);
+    } else {
+      Serial.print(valueToPrint);
+    }
 }
 
 void mainLoop() {
@@ -522,7 +532,7 @@ void mainLoop() {
 void animation() {
   // согласно режиму
   switch (this_mode) {
-    case 0:
+    case 0: //uv default
       count = 0;
       for (int i = (MAX_CH - 1); i > ((MAX_CH - 1) - Rlenght); i--) {
         leds[i] = ColorFromPalette(myPal, (count * index));   // заливка по палитре " от зелёного к красному"
@@ -541,7 +551,7 @@ void animation() {
           leds[i] = this_dark;
       }
       break;
-    case 1:
+    case 1://uv rainbow
       if (millis() - rainbow_timer > 30) {
         rainbow_timer = millis();
         hue = floor((float)hue + RAINBOW_STEP);
@@ -564,7 +574,7 @@ void animation() {
           leds[i] = this_dark;
       }
       break;
-    case 2:
+    case 2://low mid high - 5 segments
       for (int i = 0; i < NUM_LEDS; i++) {
         if (i < STRIPE)          leds[i] = CHSV(HIGH_COLOR, 255, thisBright[2]);
         else if (i < STRIPE * 2) leds[i] = CHSV(MID_COLOR, 255, thisBright[1]);
@@ -573,14 +583,14 @@ void animation() {
         else if (i < STRIPE * 5) leds[i] = CHSV(HIGH_COLOR, 255, thisBright[2]);
       }
       break;
-    case 3:
+    case 3://low mid high - 3 segments
       for (int i = 0; i < NUM_LEDS; i++) {
         if (i < NUM_LEDS / 3)          leds[i] = CHSV(HIGH_COLOR, 255, thisBright[2]);
         else if (i < NUM_LEDS * 2 / 3) leds[i] = CHSV(MID_COLOR, 255, thisBright[1]);
         else if (i < NUM_LEDS)         leds[i] = CHSV(LOW_COLOR, 255, thisBright[0]);
       }
       break;
-    case 4:
+    case 4://low mid high - 3 individual colors
       switch (freq_strobe_mode) {
         case 0:
           if (colorMusicFlash[2]) HIGHS();
@@ -602,13 +612,13 @@ void animation() {
           break;
       }
       break;
-    case 5:
+    case 5://stroboscope
       if (strobe_bright > 0)
         for (int i = 0; i < NUM_LEDS; i++) leds[i] = CHSV(STROBE_COLOR, STROBE_SAT, strobe_bright);
       else
         for (int i = 0; i < NUM_LEDS; i++) leds[i] = CHSV(EMPTY_COLOR, 255, EMPTY_BRIGHT);
       break;
-    case 6:
+    case 6://static color and others
       switch (light_mode) {
         case 0: for (int i = 0; i < NUM_LEDS; i++) leds[i] = CHSV(LIGHT_COLOR, LIGHT_SAT, 255);
           break;
@@ -649,7 +659,7 @@ void animation() {
 
       }
       break;
-    case 7:
+    case 7://low mid high - running colors
       switch (freq_strobe_mode) {
         case 0:
           if (running_flag[2]) leds[NUM_LEDS / 2] = CHSV(HIGH_COLOR, 255, thisBright[2]);
@@ -679,15 +689,70 @@ void animation() {
         }
       }
       break;
-    case 8:
-      byte HUEindex = HUE_START;
-      for (int i = 0; i < NUM_LEDS / 2; i++) {
-        byte this_bright = map(freq_f[(int)floor((NUM_LEDS / 2 - i) / freq_to_stripe)], 0, freq_max_f, 0, 255);
-        this_bright = constrain(this_bright, 0, 255);
-        leds[i] = CHSV(HUEindex, 255, this_bright);
-        leds[NUM_LEDS - i - 1] = leds[i];
-        HUEindex += HUE_STEP;
-        if (HUEindex > 255) HUEindex = 0;
+    case 8://many frequencies
+      switch (multi_frequencies_mode) {
+        case 0: {//default
+          byte HUEindex = HUE_START;
+          for (int i = 0; i < NUM_LEDS / 2; i++) {
+            byte this_bright = map(freq_f[(int)floor((NUM_LEDS / 2 - i) / freq_to_stripe)], 0, freq_max_f, 0, 255);
+            this_bright = constrain(this_bright, 0, 255);
+            leds[i] = CHSV(HUEindex, 255, this_bright);
+            leds[NUM_LEDS - i - 1] = leds[i];
+            HUEindex += HUE_STEP;
+            if (HUEindex > 255) HUEindex = 0;
+          }
+          break;
+        }//case 0 end
+        case 1: {//default with empty bright
+          byte HUEindex = HUE_START;
+          for (int i = 0; i < NUM_LEDS / 2; i++) {
+            byte this_bright = map(freq_f[(int)floor((NUM_LEDS / 2 - i) / freq_to_stripe)], 0, freq_max_f, 0, 255);
+            this_bright = constrain(this_bright, 0, 255);
+            if (this_bright < EMPTY_BRIGHT) {
+                this_bright = EMPTY_BRIGHT;
+            }
+            leds[i] = CHSV(HUEindex, 255, this_bright);
+            leds[NUM_LEDS - i - 1] = leds[i];
+            HUEindex += HUE_STEP;
+            if (HUEindex > 255) HUEindex = 0;
+          }
+          break;
+        }//case 1 end
+        case 2: { // 3 segments
+          for (int i = 0; i < NUM_LEDS; i++) {
+            byte this_bright = map(freq_f[(int)floor((NUM_LEDS  - i) / ( NUM_LEDS / 20))], 0, freq_max_f, 0, 255);
+            this_bright = constrain(this_bright, 0, 255);
+            if (this_bright < EMPTY_BRIGHT) {
+                this_bright = EMPTY_BRIGHT;
+            }
+
+            if (i < NUM_LEDS / 3)          leds[i] = CHSV(HIGH_COLOR, 255, this_bright);
+            else if (i < NUM_LEDS * 2 / 3) leds[i] = CHSV(MID_COLOR, 255, this_bright);
+            else if (i < NUM_LEDS)         leds[i] = CHSV(LOW_COLOR, 255, this_bright);
+          }
+          break;
+        }//case 2 end
+        case 3: { // 5 segments
+          for (int i = 0; i < NUM_LEDS / 2; i++) {
+            byte this_bright = map(freq_f[(int)floor((NUM_LEDS / 2 - i) / freq_to_stripe)], 0, freq_max_f, 0, 255);
+            this_bright = constrain(this_bright, 0, 255);
+            if (this_bright < EMPTY_BRIGHT) {
+                this_bright = EMPTY_BRIGHT;
+            }
+            if (i < (int)floor(NUM_LEDS/2/5*2)) {
+              leds[i] = CHSV(HIGH_COLOR, 255, this_bright);
+              leds[NUM_LEDS - i - 1] = leds[i];
+            } else if (i < (int)floor(NUM_LEDS/2/5*4)) {
+              leds[i] = CHSV(MID_COLOR, 255, this_bright);
+              leds[NUM_LEDS - i - 1] = leds[i];
+            } else {
+              leds[i] = CHSV(LOW_COLOR, 255, this_bright);
+              leds[NUM_LEDS - i - 1] = leds[i];
+            }
+          }
+          break;
+        }//case 3 end
+        
       }
       break;
   }
@@ -790,6 +855,8 @@ void remoteTick() {
             break;
           case 6: if (++light_mode > 6) light_mode = 0;
             break;
+          case 8: if (++multi_frequencies_mode > 3) multi_frequencies_mode = 0;
+            break;
         }
         break;
       case BUTT_OK: digitalWrite(MLED_PIN, settings_mode ^ MLED_ON); settings_mode = !settings_mode;
@@ -827,7 +894,12 @@ void remoteTick() {
               break;
             case 7: MAX_COEF_FREQ = smartIncrFloat(MAX_COEF_FREQ, 0.1, 0.0, 10);
               break;
-            case 8: HUE_START = smartIncr(HUE_START, 10, 0, 255);
+            case 8: 
+              switch (multi_frequencies_mode) {
+                case 0:
+                case 1: HUE_START = smartIncr(HUE_START, 10, 0, 255);
+                  break;
+              }
               break;
           }
         }
@@ -865,7 +937,12 @@ void remoteTick() {
               break;
             case 7: MAX_COEF_FREQ = smartIncrFloat(MAX_COEF_FREQ, -0.1, 0.0, 10);
               break;
-            case 8: HUE_START = smartIncr(HUE_START, -10, 0, 255);
+            case 8: 
+              switch (multi_frequencies_mode) {
+                case 0:
+                case 1: HUE_START = smartIncr(HUE_START, -10, 0, 255);
+                  break;
+              }
               break;
           }
         }
@@ -902,7 +979,12 @@ void remoteTick() {
               break;
             case 7: RUNNING_SPEED = smartIncr(RUNNING_SPEED, -10, 1, 255);
               break;
-            case 8: HUE_STEP = smartIncr(HUE_STEP, -1, 1, 255);
+            case 8: 
+              switch (multi_frequencies_mode) {
+                case 0:
+                case 1: HUE_STEP = smartIncr(HUE_STEP, -1, 1, 255);
+                  break;
+              }
               break;
           }
         }
@@ -939,8 +1021,13 @@ void remoteTick() {
               break;
             case 7: RUNNING_SPEED = smartIncr(RUNNING_SPEED, 10, 1, 255);
               break;
-            case 8: HUE_STEP = smartIncr(HUE_STEP, 1, 1, 255);
-              break;
+            case 8: 
+              switch (multi_frequencies_mode) {
+                case 0:
+                case 1: HUE_STEP = smartIncr(HUE_STEP, 1, 1, 255);
+                  break;
+              }
+              break;  
           }
         }
         break;
@@ -1036,6 +1123,7 @@ void updateEEPROM() {
   if (KEEP_STATE) EEPROM.updateByte(64, ONstate);
   EEPROM.updateInt(68, FIRE_SPARKING);
   EEPROM.updateInt(72, FIRE_COOLING);
+  EEPROM.updateInt(76, multi_frequencies_mode);
 }
 void readEEPROM() {
   this_mode = EEPROM.readByte(1);
@@ -1059,6 +1147,7 @@ void readEEPROM() {
   if (KEEP_STATE) ONstate = EEPROM.readByte(64);
   FIRE_SPARKING = EEPROM.readInt(68);
   FIRE_COOLING = EEPROM.readInt(72);
+  multi_frequencies_mode = EEPROM.readInt(76);
 }
 void eepromTick() {
   if (eeprom_flag)

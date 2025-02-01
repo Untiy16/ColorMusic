@@ -108,12 +108,3 @@ void beads() {
        leds[j] = CHSV(LIGHT_COLOR, LIGHT_SAT, 255);
    }
 }
-
-template <typename T>
-void dd(T valueToPrint, bool lineBreake = true) {
-    if (lineBreake) {
-      Serial.println(valueToPrint);
-    } else {
-      Serial.print(valueToPrint);
-    }
-}
