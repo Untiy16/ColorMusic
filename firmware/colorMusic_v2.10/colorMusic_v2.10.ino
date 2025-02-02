@@ -365,13 +365,15 @@ void loop() {
   eepromTick();     // проверка не пора ли сохранить настройки
 }
 
-template <typename T>
-void dd(T valueToPrint, bool lineBreake = true) {
-    if (lineBreake) {
-      Serial.println(valueToPrint);
-    } else {
-      Serial.print(valueToPrint);
-    }
+void dd() {
+    Serial.println(); // Конец строки
+}
+
+template <typename T, typename... Args>
+void dd(T first, Args... args) {
+    Serial.print(first); // Выводим первый аргумент
+    Serial.print(" ");   // Добавляем пробел между аргументами
+    dd(args...); // Рекурсивно вызываем функцию для оставшихся аргументов
 }
 
 void mainLoop() {
