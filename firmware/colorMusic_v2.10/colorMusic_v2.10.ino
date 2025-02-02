@@ -797,19 +797,23 @@ float smartIncrFloat(float value, float incr_step, float mininmum, float maximum
   return val_buf;
 }
 
-float mapFloat(float val, float min1, float max1, float min2, float max2) {
-    return min2 + (val - min1) * (max2 - min2) / (max1 - min1);
-}
-
 template <typename T>
 void visualizeSettings(T settingsValue, T minimum, T maximum) {
-  int displayValue = mapFloat(settingsValue, minimum, maximum, 1, NUM_LEDS);
+  int displayValue = 1;
+  if (settingsValue >= maximum) {
+    displayValue = NUM_LEDS;
+  } else if (settingsValue <= minimum) {
+    displayValue = 1;
+  } else {
+    displayValue = ceil(1 + (settingsValue - minimum) * (static_cast<float>(NUM_LEDS - 1)/(maximum - minimum)));
+  }
+  displayValue = constrain(displayValue, 1, NUM_LEDS);
 
   FastLED.clear();
   leds[0] = leds[NUM_LEDS - 1] = CHSV(HUE_RED, 255, 255);
   if (displayValue > 1) {
     for (int i = NUM_LEDS - 1; i >= NUM_LEDS - displayValue; i--) {
-      leds[i] = CRGB::White;
+      leds[i] = CRGB::White;//CHSV(HUE_BLUE, 255, 255);
     }
   }
 
