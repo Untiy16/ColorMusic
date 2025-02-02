@@ -744,10 +744,10 @@ void animation() {
             if (this_bright < EMPTY_BRIGHT) {
                 this_bright = EMPTY_BRIGHT;
             }
-            if (i < (int)floor(NUM_LEDS/2/5*2)) {
+            if (i < (int)floor(NUM_LEDS/2/5*2) - 1) {// -1 - корекція щоб сусідні сегменти високих і середніх частот не пересікались
               leds[i] = CHSV(HIGH_COLOR, 255, this_bright);
               leds[NUM_LEDS - i - 1] = leds[i];
-            } else if (i < (int)floor(NUM_LEDS/2/5*4)) {
+            } else if (i < (int)floor(NUM_LEDS/2/5*4) - 1) {// -1 - корекція щоб сусідні сегменти середніх і низьких частот не пересікались
               leds[i] = CHSV(MID_COLOR, 255, this_bright);
               leds[NUM_LEDS - i - 1] = leds[i];
             } else {
