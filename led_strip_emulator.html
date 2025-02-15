@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+	<title>Document</title>
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+		body {
+			
+		}
+		.led-strip {
+			display: flex;
+			border: 1px solid black;
+			padding: 5px;
+			justify-content: space-between;
+
+		}
+
+		.led {
+			width: 15px;
+			height: 15px;
+			border: 1px solid black;
+			margin-right: 5px;
+			border-radius: 100%;
+			background: black;
+		}
+		
+	</style>
+</head>
+<body>
+
+	<div class="led-strip">
+	</div>
+
+	<script type="text/javascript">
+		window.dd = console.log.bind(console);  
+		function ledsClear() {
+			$('.led-strip .led').css('background', 'black');
+		}
+		//init
+		const NUM_LEDS = 80; 
+		let $ledStrip = $('.led-strip');
+		for (var i = 0; i < NUM_LEDS; i++) {
+			$ledStrip.append('<div class="led"></div>');
+		}
+		//init END
+
+		let direction = true;
+		let blink = true;
+		let policeStrobeSectionLength = 5;
+		let policeStrobeSectionCounter = 0;
+		let policeStrobeWhiteLength = 2 * policeStrobeSectionLength + 2 - 1;
+		// let policeStrobeWhiteLength = 9 + policeStrobeSectionLength - 1;
+		//every n milliseconds
+        setInterval(function() {direction = !direction;}, 800)
+        setInterval(function() {blink = !blink;}, 50)
+
+
+		setInterval(function() {
+            ledsClear();
+            policeStrobeSectionCounter = 0;
+			let $leds = $ledStrip.find('.led');
+			if (blink) {
+				if (direction) {
+					for (var i = NUM_LEDS / 2 - 1; i >= 0; i--) {
+						if (policeStrobeSectionCounter !== policeStrobeSectionLength) {
+							if (i > (NUM_LEDS / 2 - 1) - policeStrobeWhiteLength) {
+								$leds.eq(i).css('background', 'white');
+							} else {
+								$leds.eq(i).css('background', 'red');
+							}
+							policeStrobeSectionCounter++;
+						} else {
+							policeStrobeSectionCounter = 0;
+
+						}
+					}
+				} else {
+					for (var i = NUM_LEDS / 2; i < NUM_LEDS; i++) {
+						if (policeStrobeSectionCounter !== policeStrobeSectionLength) {
+							if (i < (NUM_LEDS / 2) + policeStrobeWhiteLength) {
+								$leds.eq(i).css('background', 'white');
+							} else {
+								$leds.eq(i).css('background', 'blue');
+							}
+							policeStrobeSectionCounter++;
+						} else {
+							policeStrobeSectionCounter = 0;
+
+						}
+					}
+				}
+			}
+
+
+		}, 5)
+
+	</script>
+	
+</body>
+</html>
