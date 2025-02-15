@@ -109,36 +109,44 @@ void beads() {
    }
 }
 
-
-unsigned long previousMillisPolice = 0;
-const int policeFlashInterval = 100;  // Time for each flash
-const int policePauseInterval = 200;  // Time between swaps
-bool swapColors = false;        // Toggle for switching colors
-int flashCount = 0;
+byte policeStrobeSectionLength = 5;
+byte policeStrobeWhiteLength = 3 * policeStrobeSectionLength + 3 - 1;
 void policeStrobe() {
-    unsigned long currentMillis = millis();
+    static bool direction = true;
+    static bool blink = true;
+    static byte sectionCounter = 0;
+    EVERY_N_MILLISECONDS(900) {direction = !direction;}
+    EVERY_N_MILLISECONDS(100) {blink = !blink;}
 
-    if (flashCount < 3) {
-        if (currentMillis - previousMillisPolice >= policeFlashInterval) {
-            previousMillisPolice = currentMillis;
-
-            if (flashCount % 2 == 0) {
-                // Half strip RED, Half strip BLUE
-                fill_solid(leds, NUM_LEDS / 2, swapColors ? CRGB::Blue : CRGB::Red);
-                fill_solid(leds + (NUM_LEDS / 2), NUM_LEDS / 2, swapColors ? CRGB::Red : CRGB::Blue);
+    if (blink) {
+      if (direction) {
+        for (int i = NUM_LEDS / 2 - 1; i >= 0; i--) {
+          if (sectionCounter != policeStrobeSectionLength) {
+						if (i > (NUM_LEDS / 2 - 1) - policeStrobeWhiteLength) {
+							leds[i] = CRGB::White;
+						} else {
+              leds[i] = CRGB::Blue;
+						}
+            sectionCounter++;
+          } else {
+							sectionCounter = 0;
+          }  
+				}
+      } else {
+					for (int i = NUM_LEDS / 2; i < NUM_LEDS; i++) {
+            if (sectionCounter != policeStrobeSectionLength) {
+              if (i < (NUM_LEDS / 2) + policeStrobeWhiteLength) {
+                leds[i] = CRGB::White;
+              } else {
+                leds[i] = CRGB::Red;
+              }
+              sectionCounter++;
             } else {
-                // Turn off LEDs briefly to create a strobe effect
-                fill_solid(leds, NUM_LEDS, CRGB::Black);
-            }
-
-            FastLED.show();
-            flashCount++;
-        }
-    } else {
-        if (currentMillis - previousMillisPolice >= policePauseInterval) {
-            previousMillisPolice = currentMillis;
-            swapColors = !swapColors;  // Swap Red/Blue sides
-            flashCount = 0;            // Reset flash count
-        }
+							sectionCounter = 0;
+						}
+					}
+      }
     }
+    sectionCounter = 0;
+
 }

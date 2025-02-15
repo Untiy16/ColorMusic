@@ -696,24 +696,13 @@ void animation() {
       break;
     case 8://many frequencies
       switch (multi_frequencies_mode) {
-        case 0: {//default
+        case 0:
+        case 1: {//default
           byte HUEindex = HUE_START;
           for (int i = 0; i < NUM_LEDS / 2; i++) {
             byte this_bright = map(freq_f[(int)floor((NUM_LEDS / 2 - i) / freq_to_stripe)], 0, freq_max_f, 0, 255);
             this_bright = constrain(this_bright, 0, 255);
-            leds[i] = CHSV(HUEindex, 255, this_bright);
-            leds[NUM_LEDS - i - 1] = leds[i];
-            HUEindex += HUE_STEP;
-            if (HUEindex > 255) HUEindex = 0;
-          }
-          break;
-        }//case 0 end
-        case 1: {//default with empty bright
-          byte HUEindex = HUE_START;
-          for (int i = 0; i < NUM_LEDS / 2; i++) {
-            byte this_bright = map(freq_f[(int)floor((NUM_LEDS / 2 - i) / freq_to_stripe)], 0, freq_max_f, 0, 255);
-            this_bright = constrain(this_bright, 0, 255);
-            if (this_bright < EMPTY_BRIGHT) {
+            if (multi_frequencies_mode == 1 && this_bright < EMPTY_BRIGHT) {
                 this_bright = EMPTY_BRIGHT;
             }
             leds[i] = CHSV(HUEindex, 255, this_bright);
@@ -722,7 +711,7 @@ void animation() {
             if (HUEindex > 255) HUEindex = 0;
           }
           break;
-        }//case 1 end
+        }//case 0/1 end
         case 2: { // 3 segments
           for (int i = 0; i < NUM_LEDS; i++) {
             byte this_bright = map(freq_f[(int)floor((NUM_LEDS  - i) / ( NUM_LEDS / 20))], 0, freq_max_f, 0, 255);
@@ -757,6 +746,34 @@ void animation() {
           }
           break;
         }//case 3 end
+        case 4: {
+          
+          if (millis() - rainbow_timer > 30) {
+            rainbow_timer = millis();
+            this_color += RAINBOW_PERIOD;
+            if (this_color > 255) this_color = 0;
+            if (this_color < 0) this_color = 255;
+          }
+          rainbow_steps = this_color;
+          for (int i = 0; i < NUM_LEDS; i++) {
+            leds[i] = CHSV((int)floor(rainbow_steps), 255, EMPTY_BRIGHT);
+            rainbow_steps += RAINBOW_STEP_2;
+            if (rainbow_steps > 255) rainbow_steps = 0;
+            if (rainbow_steps < 0) rainbow_steps = 255;
+          }
+          for (int i = 0; i < NUM_LEDS / 2; i++) {
+            byte this_bright = map(freq_f[(int)floor((NUM_LEDS / 2 - i) / freq_to_stripe)], 0, freq_max_f, 0, 255);
+            this_bright = constrain(this_bright, 0, 255);
+            if (this_bright > EMPTY_BRIGHT) {
+                CHSV color1 = rgb2hsv_approximate(leds[i]); 
+                CHSV color2 = rgb2hsv_approximate(leds[NUM_LEDS - i - 1]); 
+                leds[i] = CHSV(color1.h, 255, 255);
+                leds[NUM_LEDS - i - 1] = CHSV(color2.h, 255, 255);
+            }
+
+          }
+          break;
+        }
         
       }
       break;
@@ -864,7 +881,7 @@ void remoteTick() {
             break;
           case 6: if (++light_mode > 7) light_mode = 0;
             break;
-          case 8: if (++multi_frequencies_mode > 3) multi_frequencies_mode = 0;
+          case 8: if (++multi_frequencies_mode > 4) multi_frequencies_mode = 0;
             break;
         }
         break;
@@ -907,6 +924,8 @@ void remoteTick() {
               switch (multi_frequencies_mode) {
                 case 0:
                 case 1: HUE_START = smartIncr(HUE_START, 10, 0, 255);
+                  break;
+                case 4: RAINBOW_STEP_2 = smartIncrFloat(RAINBOW_STEP_2, 0.5, 0.5, 10);
                   break;
               }
               break;
@@ -951,6 +970,8 @@ void remoteTick() {
                 case 0:
                 case 1: HUE_START = smartIncr(HUE_START, -10, 0, 255);
                   break;
+                case 4: RAINBOW_STEP_2 = smartIncrFloat(RAINBOW_STEP_2, -0.5, 0.5, 10);
+                  break;
               }
               break;
           }
@@ -993,6 +1014,8 @@ void remoteTick() {
                 case 0:
                 case 1: HUE_STEP = smartIncr(HUE_STEP, -1, 1, 255);
                   break;
+                case 4: RAINBOW_PERIOD = smartIncr(RAINBOW_PERIOD, -1, -20, 20);
+                  break;  
               }
               break;
           }
@@ -1034,6 +1057,8 @@ void remoteTick() {
               switch (multi_frequencies_mode) {
                 case 0:
                 case 1: HUE_STEP = smartIncr(HUE_STEP, 1, 1, 255);
+                  break;
+                case 4: RAINBOW_PERIOD = smartIncr(RAINBOW_PERIOD, 1, -20, 20);
                   break;
               }
               break;  
