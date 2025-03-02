@@ -7,7 +7,6 @@ void bluetoothTick() {
   }
 
   if (command != "") {
-  dd(command);
 
     command.trim();  // Remove added LF in transmit
     // We expect Command from bluetooth
