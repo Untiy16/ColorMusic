@@ -54,6 +54,15 @@ byte EMPTY_BRIGHT = 255;           // яркость "не горящих" св�
 #define POT_GND A0              // пин земля для потенциометра
 #define IR_PIN 2                // пин ИК приёмника
 
+// Bluetooth
+#define USE_BT 1
+#define BT_RX 4
+#define BT_TX 5
+#include <SoftwareSerial.h>
+SoftwareSerial btSerial(BT_TX, BT_RX); // RX, TX //BT_TX=5 BT_RX=4
+
+
+
 // ----- настройки радуги
 float RAINBOW_STEP = 5.00;         // шаг изменения цвета радуги
 
@@ -220,8 +229,8 @@ float freq_to_stripe = NUM_LEDS / 40; // /2 так как симметрия, и
 #include "FastLED.h"
 CRGB leds[NUM_LEDS];
 
-#include "GyverButton.h"
-GButton butt1(BTN_PIN);
+// #include "GyverButton.h"
+// GButton butt1(BTN_PIN);
 
 #include "IRLremote.h"
 CHashIR IRLremote;
@@ -272,6 +281,7 @@ boolean running_flag[3], eeprom_flag;
 // ------------------------------ ДЛЯ РАЗРАБОТЧИКОВ --------------------------------
 
 void setup() {
+  if (USE_BT) btSerial.begin(9600);
   Serial.begin(9600);
   FastLED.addLeds<WS2811, LED_PIN, GRB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   if (CURRENT_LIMIT > 0) FastLED.setMaxPowerInVoltsAndMilliamps(5, CURRENT_LIMIT);
@@ -286,7 +296,7 @@ void setup() {
 
   pinMode(POT_GND, OUTPUT);
   digitalWrite(POT_GND, LOW);
-  butt1.setTimeout(900);
+  // butt1.setTimeout(900);
 
   IRLremote.begin(IR_PIN);
 
@@ -357,10 +367,11 @@ void setup() {
 }
 
 void loop() {
-  buttonTick();     // опрос и обработка кнопки
+  // buttonTick();     // опрос и обработка кнопки
 #if REMOTE_TYPE != 0
   remoteTick();     // опрос ИК пульта
 #endif
+  if (USE_BT) bluetoothTick();  // парсинг блютус
   mainLoop();       // главный цикл обработки и отрисовки
   eepromTick();     // проверка не пора ли сохранить настройки
 }
@@ -647,18 +658,15 @@ void animation() {
           }
           break;
         case 3:
-          pride();
-          break;
-        case 4:
           fire();
           break;
-        case 5:
+        case 4:
           travel_light();
           break;
-        case 6:
+        case 5:
           beads();
           break;
-        case 7:
+        case 6:
           policeStrobe();
           break;
 
@@ -879,7 +887,7 @@ void remoteTick() {
           case 4:
           case 7: if (++freq_strobe_mode > 3) freq_strobe_mode = 0;
             break;
-          case 6: if (++light_mode > 7) light_mode = 0;
+          case 6: if (++light_mode > 6) light_mode = 0;
             break;
           case 8: if (++multi_frequencies_mode > 4) multi_frequencies_mode = 0;
             break;
@@ -911,10 +919,10 @@ void remoteTick() {
                   break;
                 case 2: RAINBOW_STEP_2 = smartIncrFloat(RAINBOW_STEP_2, 0.5, 0.5, 10);
                   break;
-                case 4: FIRE_COOLING = smartIncr(FIRE_COOLING, 10, 20, 100);
+                case 3: FIRE_COOLING = smartIncr(FIRE_COOLING, 10, 20, 100);
                   break;
-                case 5:
-                case 6: TRAVEL_LIGHT_SPEED = smartIncr(TRAVEL_LIGHT_SPEED, -50, 10, 1000);
+                case 4:
+                case 5: TRAVEL_LIGHT_SPEED = smartIncr(TRAVEL_LIGHT_SPEED, -50, 10, 1000);
                   break;
               }
               break;
@@ -956,10 +964,10 @@ void remoteTick() {
                   break;
                 case 2: RAINBOW_STEP_2 = smartIncrFloat(RAINBOW_STEP_2, -0.5, 0.5, 10);
                   break;
-                case 4: FIRE_COOLING = smartIncr(FIRE_COOLING, -10, 20, 100);
+                case 3: FIRE_COOLING = smartIncr(FIRE_COOLING, -10, 20, 100);
                   break;
-                case 5:
-                case 6: TRAVEL_LIGHT_SPEED = smartIncr(TRAVEL_LIGHT_SPEED, 50, 10, 1000);
+                case 4:
+                case 5: TRAVEL_LIGHT_SPEED = smartIncr(TRAVEL_LIGHT_SPEED, 50, 10, 1000);
                   break;
               }
               break;
@@ -996,14 +1004,14 @@ void remoteTick() {
             case 6:
               switch (light_mode) { //int smartIncr(int value, int incr_step, int mininmum, int maximum) {
                 case 0:
-                case 5:
-                case 6: LIGHT_COLOR = smartIncr(LIGHT_COLOR, -10, 0, 255);
+                case 4:
+                case 5: LIGHT_COLOR = smartIncr(LIGHT_COLOR, -10, 0, 255);
                   break;
                 case 1: COLOR_SPEED = smartIncr(COLOR_SPEED, -10, 0, 255);
                   break;
                 case 2: RAINBOW_PERIOD = smartIncr(RAINBOW_PERIOD, -1, -20, 20);
                   break;
-                case 4: FIRE_SPARKING = smartIncr(FIRE_SPARKING, -10, 50, 200);
+                case 3: FIRE_SPARKING = smartIncr(FIRE_SPARKING, -10, 50, 200);
                   break;
               }
               break;
@@ -1040,14 +1048,14 @@ void remoteTick() {
             case 6:
               switch (light_mode) {
                 case 0:
-                case 5:
-                case 6: LIGHT_COLOR = smartIncr(LIGHT_COLOR, 10, 0, 255);
+                case 4:
+                case 5: LIGHT_COLOR = smartIncr(LIGHT_COLOR, 10, 0, 255);
                   break;
                 case 1: COLOR_SPEED = smartIncr(COLOR_SPEED, 10, 0, 255);
                   break;
                 case 2: RAINBOW_PERIOD = smartIncr(RAINBOW_PERIOD, 1, -20, 20);
                   break;
-                case 4: FIRE_SPARKING = smartIncr(FIRE_SPARKING, 10, 50, 200);
+                case 3: FIRE_SPARKING = smartIncr(FIRE_SPARKING, 10, 50, 200);
                   break;
               }
               break;
@@ -1115,15 +1123,15 @@ void analyzeAudio() {
   fht_mag_log(); // take the output of the fht
 }
 
-void buttonTick() {
-  butt1.tick();  // обязательная функция отработки. Должна постоянно опрашиваться
-  if (butt1.isSingle())                              // если единичное нажатие
-    if (++this_mode >= MODE_AMOUNT) this_mode = 0;   // изменить режим
+// void buttonTick() {
+//   butt1.tick();  // обязательная функция отработки. Должна постоянно опрашиваться
+//   if (butt1.isSingle())                              // если единичное нажатие
+//     if (++this_mode >= MODE_AMOUNT) this_mode = 0;   // изменить режим
 
-  if (butt1.isHolded()) {     // кнопка удержана
-    fullLowPass();
-  }
-}
+//   if (butt1.isHolded()) {     // кнопка удержана
+//     fullLowPass();
+//   }
+// }
 void fullLowPass() {
   digitalWrite(MLED_PIN, MLED_ON);   // включить светодиод
   FastLED.setBrightness(0); // погасить ленту
