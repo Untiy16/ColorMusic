@@ -705,16 +705,26 @@ void animation() {
     case 8://many frequencies
       switch (multi_frequencies_mode) {
         case 0:
-        case 1: {//default
+        case 1:
+        case 5:
+        case 6: {//default
+          byte multiplier = ((multi_frequencies_mode == 5 || multi_frequencies_mode == 6) ? 1 : 2);
           byte HUEindex = HUE_START;
-          for (int i = 0; i < NUM_LEDS / 2; i++) {
-            byte this_bright = map(freq_f[(int)floor((NUM_LEDS / 2 - i) / freq_to_stripe)], 0, freq_max_f, 0, 255);
+          for (int i = 0; i < NUM_LEDS / multiplier; i++) {
+            byte this_bright = 0;
+            if (multiplier == 1) {
+              this_bright = map(freq_f[(int)floor((NUM_LEDS  - i) / ( NUM_LEDS / 20))], 0, freq_max_f, 0, 255);
+            } else {
+              this_bright = map(freq_f[(int)floor((NUM_LEDS / 2 - i) / freq_to_stripe)], 0, freq_max_f, 0, 255);
+            }
             this_bright = constrain(this_bright, 0, 255);
-            if (multi_frequencies_mode == 1 && this_bright < EMPTY_BRIGHT) {
+            if ((multi_frequencies_mode == 1 || multi_frequencies_mode == 6) && this_bright < EMPTY_BRIGHT) {
                 this_bright = EMPTY_BRIGHT;
             }
             leds[i] = CHSV(HUEindex, 255, this_bright);
-            leds[NUM_LEDS - i - 1] = leds[i];
+            if (multiplier != 1) {
+              leds[NUM_LEDS - i - 1] = leds[i];
+            }
             HUEindex += HUE_STEP;
             if (HUEindex > 255) HUEindex = 0;
           }
@@ -764,21 +774,15 @@ void animation() {
           }
           rainbow_steps = this_color;
           for (int i = 0; i < NUM_LEDS; i++) {
-            leds[i] = CHSV((int)floor(rainbow_steps), 255, EMPTY_BRIGHT);
+            byte this_bright = map(freq_f[(int)floor((NUM_LEDS  - i) / ( NUM_LEDS / 20))], 0, freq_max_f, 0, 255);
+            this_bright = constrain(this_bright, 0, 255);
+            if (this_bright < EMPTY_BRIGHT) {
+                this_bright = EMPTY_BRIGHT;
+            }
+            leds[i] = CHSV((int)floor(rainbow_steps), 255, this_bright);
             rainbow_steps += RAINBOW_STEP_2;
             if (rainbow_steps > 255) rainbow_steps = 0;
             if (rainbow_steps < 0) rainbow_steps = 255;
-          }
-          for (int i = 0; i < NUM_LEDS / 2; i++) {
-            byte this_bright = map(freq_f[(int)floor((NUM_LEDS / 2 - i) / freq_to_stripe)], 0, freq_max_f, 0, 255);
-            this_bright = constrain(this_bright, 0, 255);
-            if (this_bright > EMPTY_BRIGHT) {
-                CHSV color1 = rgb2hsv_approximate(leds[i]); 
-                CHSV color2 = rgb2hsv_approximate(leds[NUM_LEDS - i - 1]); 
-                leds[i] = CHSV(color1.h, 255, 255);
-                leds[NUM_LEDS - i - 1] = CHSV(color2.h, 255, 255);
-            }
-
           }
           break;
         }
@@ -889,7 +893,7 @@ void remoteTick() {
             break;
           case 6: if (++light_mode > 6) light_mode = 0;
             break;
-          case 8: if (++multi_frequencies_mode > 4) multi_frequencies_mode = 0;
+          case 8: if (++multi_frequencies_mode > 6) multi_frequencies_mode = 0;
             break;
         }
         break;
