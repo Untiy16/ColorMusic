@@ -217,7 +217,7 @@ bool isSettingsVisualizationActive = false;
 #define MODE_AMOUNT 9      // количество режимов
 
 #define STRIPE NUM_LEDS / 5
-float freq_to_stripe = NUM_LEDS / 40; // /2 так как симметрия, и /20 так как 20 частот
+byte FREQ_COUNT = 20;
 
 #define FHT_N 64         // ширина спектра х2
 #define LOG_OUT 1
@@ -703,6 +703,7 @@ void animation() {
       }
       break;
     case 8://many frequencies
+      float freq_to_stripe = NUM_LEDS / 2 / FREQ_COUNT; // /2 так как симметрия, и /20 так как 20 частот
       switch (multi_frequencies_mode) {
         case 0:
         case 1:
@@ -713,7 +714,7 @@ void animation() {
           for (int i = 0; i < NUM_LEDS / multiplier; i++) {
             byte this_bright = 0;
             if (multiplier == 1) {
-              this_bright = map(freq_f[(int)floor((NUM_LEDS  - i) / ( NUM_LEDS / 20))], 0, freq_max_f, 0, 255);
+              this_bright = map(freq_f[(int)floor((NUM_LEDS  - i) / ( NUM_LEDS / FREQ_COUNT))], 0, freq_max_f, 0, 255);
             } else {
               this_bright = map(freq_f[(int)floor((NUM_LEDS / 2 - i) / freq_to_stripe)], 0, freq_max_f, 0, 255);
             }
@@ -732,7 +733,7 @@ void animation() {
         }//case 0/1 end
         case 2: { // 3 segments
           for (int i = 0; i < NUM_LEDS; i++) {
-            byte this_bright = map(freq_f[(int)floor((NUM_LEDS  - i) / ( NUM_LEDS / 20))], 0, freq_max_f, 0, 255);
+            byte this_bright = map(freq_f[(int)floor((NUM_LEDS  - i) / ( NUM_LEDS / FREQ_COUNT))], 0, freq_max_f, 0, 255);
             this_bright = constrain(this_bright, 0, 255);
             if (this_bright < EMPTY_BRIGHT) {
                 this_bright = EMPTY_BRIGHT;
@@ -774,7 +775,7 @@ void animation() {
           }
           rainbow_steps = this_color;
           for (int i = 0; i < NUM_LEDS; i++) {
-            byte this_bright = map(freq_f[(int)floor((NUM_LEDS  - i) / ( NUM_LEDS / 20))], 0, freq_max_f, 0, 255);
+            byte this_bright = map(freq_f[(int)floor((NUM_LEDS  - i) / ( NUM_LEDS / FREQ_COUNT))], 0, freq_max_f, 0, 255);
             this_bright = constrain(this_bright, 0, 255);
             if (this_bright < EMPTY_BRIGHT) {
                 this_bright = EMPTY_BRIGHT;

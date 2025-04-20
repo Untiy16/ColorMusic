@@ -97,8 +97,10 @@ void bluetoothTick() {
         else if (parsedCommand == 36) { BRIGHTNESS = smartIncr(BRIGHTNESS, 20, 0, 255); FastLED.setBrightness(BRIGHTNESS); }//else if (command.equals("bright_on+")) { BRIGHTNESS = smartIncr(BRIGHTNESS, 20, 0, 255); }
         else if (parsedCommand == 37) { EMPTY_BRIGHT = smartIncr(EMPTY_BRIGHT, -5, 0, 255); }//else if (command.equals("bright_off-")) { EMPTY_BRIGHT = smartIncr(EMPTY_BRIGHT, -5, 0, 255); }
         else if (parsedCommand == 38) { EMPTY_BRIGHT = smartIncr(EMPTY_BRIGHT, 5, 0, 255); }//else if (command.equals("bright_off+")) { EMPTY_BRIGHT = smartIncr(EMPTY_BRIGHT, 5, 0, 255); }
-        /* On/OFF star btn*/else if (parsedCommand == 39) { ONstate = !ONstate; FastLED.clear(); FastLED.show(); updateEEPROM(); }
-        /* calibration 0 btn */else if (parsedCommand == 40) { fullLowPass(); }
+        else if (parsedCommand == 39) { ONstate = !ONstate; FastLED.clear(); FastLED.show(); updateEEPROM(); }/* On/OFF star btn*/
+        else if (parsedCommand == 40) { fullLowPass(); } /* calibration 0 btn */
+        else if (parsedCommand == 41) { FREQ_COUNT = smartIncr(FREQ_COUNT, -1, 1, 20); }
+        else if (parsedCommand == 42) { FREQ_COUNT = smartIncr(FREQ_COUNT, 1, 1, 20); }
       } 
     }
     
